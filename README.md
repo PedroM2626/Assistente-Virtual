@@ -1,4 +1,4 @@
-# Assistente Virtual em Python (script único)
+# Assistente Virtual
 
 ## Visão Geral
 
