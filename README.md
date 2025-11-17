@@ -86,3 +86,13 @@ Sem suíte de testes automatizada neste formato; a validação é manual via CLI
 ## Licença
 
 Uso educacional.
+.### Notebook
+
+- Abrir `assistente.ipynb` no Jupyter.
+- O notebook foi gerado a partir de `assistente.py` via Jupytext e contém células Markdown explicando cada seção (STT, TTS, Ações, Orquestrador e CLI).
+- Sincronizar alterações:
+
+```bash
+.\.venv\Scripts\python -m jupytext --to ipynb assistente.py
+.\.venv\Scripts\python -m jupytext --to py assistente.ipynb
+```

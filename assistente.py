@@ -1,3 +1,12 @@
+# %% [markdown]
+# Assistente Virtual
+#
+# Notebook/Script único com:
+# - STT (Speech to Text)
+# - TTS (Text to Speech)
+# - Comandos: Wikipedia, YouTube, Farmácia próxima
+
+# %%
 import argparse
 from typing import Protocol, Optional, Iterable
 from dataclasses import dataclass
@@ -9,13 +18,16 @@ from dotenv import load_dotenv
 
 class SpeechToText(Protocol):
     def listen(self, timeout: Optional[float] = None) -> Optional[str]:
-        ...
+        pass
 
 
 class TextToSpeech(Protocol):
     def speak(self, text: str) -> None:
-        ...
+        pass
 
+
+# %% [markdown]
+# Implementações de STT e TTS
 
 class SpeechRecognitionSTT:
     def __init__(self, language: str = "pt-BR"):
@@ -81,6 +93,9 @@ class SilentTTS:
         pass
 
 
+# %% [markdown]
+# Configuração por variáveis de ambiente
+
 @dataclass
 class Config:
     lang: str = "pt-BR"
@@ -97,6 +112,9 @@ def load_config() -> Config:
         tts_engine=os.getenv("TTS_ENGINE", "pyttsx3"),
     )
 
+
+# %% [markdown]
+# Ações: Wikipedia, YouTube e Farmácia
 
 @dataclass
 class ActionResult:
@@ -141,6 +159,9 @@ def parse_and_execute(text: str) -> ActionResult:
     return ActionResult(False, "Comando não reconhecido")
 
 
+# %% [markdown]
+# Orquestrador do Assistente
+
 class Assistant:
     def __init__(self, stt: SpeechToText, tts: TextToSpeech, config: Config):
         self._stt = stt
@@ -179,6 +200,9 @@ def build_assistant(mode: str, once_text: str | None) -> Assistant:
         stt = TextInputSTT([once_text] if once_text else None)
     return Assistant(stt=stt, tts=tts, config=cfg)
 
+
+# %% [markdown]
+# Interface de Linha de Comando (CLI)
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser("Assistente Virtual")
