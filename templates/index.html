@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assistente Virtual - Web</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 24px; background: #f7f7f7; }
+    .container { max-width: 720px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    h1 { margin-top: 0; }
+    form { display: flex; gap: 12px; }
+    input[type="text"] { flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; }
+    button { padding: 12px 16px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; background: #1f6feb; color: #fff; }
+    .msg { margin-top: 16px; padding: 12px; border-radius: 8px; }
+    .ok { background: #e6ffed; color: #063d1e; border: 1px solid #b7ebc6; }
+    .err { background: #fff5f5; color: #611a15; border: 1px solid #f3c1c1; }
+    .examples { margin-top: 24px; }
+    .examples code { background: #f0f0f0; padding: 2px 6px; border-radius: 6px; }
+  </style>
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <div class="container">
+    <h1>Assistente Virtual (Web)</h1>
+    <form id="cmd-form">
+      <input id="cmd-input" type="text" name="text" placeholder="Digite um comando" value="{{ last_text }}" />
+      <button type="submit">Executar</button>
+      <button type="button" id="mic-btn">🎤 Falar</button>
+      <label><input type="checkbox" id="speak-toggle" checked /> Ouvir resposta</label>
+    </form>
+    <audio id="audio-player" controls style="margin-top:12px; display:none;"></audio>
+    <div id="msg" class="msg" style="display:none;"></div>
+    {% if message is not none %}
+      <div class="msg {{ 'ok' if success else 'err' }}">{{ message }}</div>
+    {% endif %}
+    <div class="examples">
+      <p>Exemplos:</p>
+      <ul>
+        <li><code>wikipedia linguagem python</code></li>
+        <li><code>youtube música clássica</code></li>
+        <li><code>farmácia</code></li>
+      </ul>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('cmd-form');
+    const input = document.getElementById('cmd-input');
+    const msgBox = document.getElementById('msg');
+    const speakToggle = document.getElementById('speak-toggle');
+    const audioPlayer = document.getElementById('audio-player');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      const res = await fetch('/api/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+      const data = await res.json();
+      msgBox.textContent = data.message || '';
+      msgBox.className = 'msg ' + (data.success ? 'ok' : 'err');
+      msgBox.style.display = 'block';
+      if (speakToggle.checked) {
+        try {
+          if ('speechSynthesis' in window) {
+            const u = new SpeechSynthesisUtterance(data.message || '');
+            u.lang = 'pt-BR';
+            window.speechSynthesis.speak(u);
+          } else {
+            const ttsRes = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: data.message || '' }) });
+            if (ttsRes.ok) {
+              const blob = await ttsRes.blob();
+              const url = URL.createObjectURL(blob);
+              audioPlayer.src = url;
+              audioPlayer.style.display = 'block';
+              audioPlayer.play();
+            }
+          }
+        } catch {}
+      }
+    });
+    const micBtn = document.getElementById('mic-btn');
+    micBtn.addEventListener('click', () => {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert('Reconhecimento de fala não suportado neste navegador'); return; }
+      const rec = new SR();
+      rec.lang = 'pt-BR';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onresult = (e) => {
+        const t = e.results[0][0].transcript || '';
+        input.value = t;
+        form.dispatchEvent(new Event('submit'));
+      };
+      rec.onerror = () => {};
+      rec.start();
+    });
+  </script>
+</body>
+</html>
