@@ -21,11 +21,13 @@ from typing import Protocol, Optional, Iterable
 from dotenv import load_dotenv
 
 # Dependências externas
-import speech_recognition as sr
 import whisper
 import openai
 from gtts import gTTS
 import pygame
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
 
 
 # %% [markdown]
@@ -50,24 +52,30 @@ class Intelligence(Protocol):
 # Implementações
 
 class WhisperSTT:
-    def __init__(self, model_size: str = "base", language: str = "pt"):
+    def __init__(self, model_size: str = "base", language: str = "pt", duration: int = 5):
         print(f"Carregando modelo Whisper '{model_size}'...")
         self._model = whisper.load_model(model_size)
         self._language = language
-        self._recognizer = sr.Recognizer()
+        self._duration = duration
         print("Modelo Whisper carregado.")
 
     def listen(self, timeout: Optional[float] = None) -> Optional[str]:
+        duration = timeout if timeout is not None else self._duration
+        fs = 44100  # Sample rate
+        
+        print(f"Ouvindo por {duration} segundos... (Fale agora)")
         try:
-            with sr.Microphone() as source:
-                print("Ouvindo (Whisper)...")
-                self._recognizer.adjust_for_ambient_noise(source)
-                audio = self._recognizer.listen(source, timeout=timeout)
+            # Gravação Bloqueante
+            recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.wait()  # Aguardar fim da gravação
+            print("Processando áudio...")
 
             # Salvar áudio temporário para o Whisper processar
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                f.write(audio.get_wav_data())
                 temp_filename = f.name
+            
+            # Escrever WAV
+            wav.write(temp_filename, fs, recording)
 
             # Transcrever
             result = self._model.transcribe(temp_filename, language=self._language, fp16=False)
@@ -81,8 +89,6 @@ class WhisperSTT:
 
             return text if text else None
 
-        except sr.WaitTimeoutError:
-            return None
         except Exception as e:
             print(f"Erro no WhisperSTT: {e}")
             return None
@@ -216,12 +222,13 @@ class AIAssistant:
         self._ai = ai
 
     def run(self):
-        self._tts.speak("Olá, sou seu assistente com Inteligência Artificial. Como posso ajudar?")
+        self._tts.speak("Olá, sou seu assistente com Inteligência Artificial. Fale após a mensagem.")
         
         while True:
             text = self._stt.listen()
             
             if not text:
+                print("Nenhum áudio detectado.")
                 continue
                 
             print(f"Você disse: {text}")
@@ -251,6 +258,7 @@ def parse_args():
     p = argparse.ArgumentParser("Assistente AI")
     p.add_argument("--mode", choices=["voice", "text"], default="voice", help="Modo de entrada")
     p.add_argument("--no-ai", action="store_true", help="Desativar ChatGPT (somente comandos locais)")
+    p.add_argument("--duration", type=int, default=5, help="Duração da gravação em segundos (padrão 5)")
     return p.parse_args()
 
 def main():
@@ -258,14 +266,11 @@ def main():
     args = parse_args()
 
     # Configurar TTS
-    # Poderíamos usar pyttsx3 como fallback, mas o pedido foi usar a tecnologia do notebook (gTTS)
     tts = GTTSTTS(language="pt")
 
     # Configurar STT
     if args.mode == "voice":
-        # Verifica se ffmpeg está disponível (necessário para Whisper)
-        # Assumimos que o usuário tem, ou o script falhará com erro descritivo do whisper
-        stt = WhisperSTT(model_size="base", language="pt")
+        stt = WhisperSTT(model_size="base", language="pt", duration=args.duration)
     else:
         stt = TextInputSTT()
 
