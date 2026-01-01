@@ -1,98 +1,78 @@
-# Assistente Virtual
+# Assistente Virtual com IA
 
-## Visão Geral
+Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, processá-los e responder usando fala.
 
-Sistema de assistência virtual em um único arquivo `assistente.py` com reconhecimento de fala (speech to text), síntese de voz (text to speech) e execução de comandos utilitários: pesquisa na Wikipedia, pesquisa no YouTube e abertura da busca por farmácias próximas no Google Maps.
+## Funcionalidades
 
-## Requisitos
+O projeto possui duas versões:
 
-- Python 3.11+ (testado em Windows)
-- Microfone para modo voz (opcional; modo texto disponível)
+1.  **`assistente.py`**: Versão clássica leve.
+    *   STT: Google Speech Recognition (Online)
+    *   TTS: pyttsx3 (Offline)
+    *   Comandos: Wikipedia, YouTube, Farmácia.
+
+2.  **`assistente_ai.py`** (NOVO): Versão avançada com IA.
+    *   STT: OpenAI Whisper (Local, alta precisão)
+    *   IA: OpenAI ChatGPT (Inteligência Geral)
+    *   TTS: Google Text-to-Speech (gTTS, voz natural)
+    *   Comandos: Wikipedia, YouTube, Farmácia + Conversação livre via ChatGPT.
+
+## Pré-requisitos
+
+- Python 3.8+
+- Conta na OpenAI (para usar o ChatGPT)
+- **FFmpeg**: Necessário para o Whisper e manipulação de áudio.
+    - **Windows**: Baixe do [site oficial](https://ffmpeg.org/download.html) ou use `choco install ffmpeg` se tiver o Chocolatey. Adicione ao PATH.
+    - **Linux**: `sudo apt install ffmpeg`
+    - **Mac**: `brew install ffmpeg`
 
 ## Instalação
 
+1.  Clone o repositório.
+2.  Crie um ambiente virtual:
+    ```bash
+    python -m venv .venv
+    # Windows:
+    .venv\Scripts\activate
+    # Linux/Mac:
+    source .venv/bin/activate
+    ```
+3.  Instale as dependências:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Configure as variáveis de ambiente:
+    *   Copie `.env.example` para `.env`
+    *   Edite `.env` e adicione sua `OPENAI_API_KEY` se for usar o modo IA.
+
+## Como Usar
+
+### Versão IA (Recomendada)
+
+Para usar voz (padrão):
 ```bash
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
+python assistente_ai.py
 ```
 
-Opcional para modo voz (se o microfone não for detectado): instalar PyAudio via wheel pré-compilado. Caso necessário, utilize um wheel compatível com seu Python e arquitetura disponível em repositórios de wheels para Windows.
-
-## Configuração
-
-- Arquivo `.env` já incluído. Ajuste conforme necessário:
-
-```env
-LANG=pt-BR
-WAKE_WORD=assistente
-STT_ENGINE=speech_recognition
-TTS_ENGINE=pyttsx3
+Para usar texto (sem microfone):
+```bash
+python assistente_ai.py --mode text
 ```
 
-## Uso
+Para desativar a IA (economizar custos) e usar apenas comandos locais com Whisper:
+```bash
+python assistente_ai.py --no-ai
+```
 
-- Modo voz:
+### Versão Clássica
 
 ```bash
-.\.venv\Scripts\python assistente.py --mode voice
+python assistente.py
 ```
-
-- Modo texto (sem microfone):
-
-```bash
-.\.venv\Scripts\python assistente.py --mode text
-```
-
-- Executar uma única vez com comando pré-definido:
-
-```bash
-.\.venv\Scripts\python assistente.py --mode text --once --command "wikipedia inteligência artificial"
-```
-
-### Exemplos de comandos
-
-- "wikipedia linguagem python"
-- "youtube música clássica"
-- "preciso de uma farmácia"
-- "sair" para encerrar
 
 ## Estrutura do Projeto
 
-```
-assistente.py
-requirements.txt
-.env
-.env.example
-.gitignore
-README.md
-```
-
-## Execução dos Testes
-
-Sem suíte de testes automatizada neste formato; a validação é manual via CLI.
-
-## Detalhes Técnicos
-
-- `SpeechRecognitionSTT` utiliza a API do Google via biblioteca SpeechRecognition.
-- `Pyttsx3TTS` realiza síntese de voz local via pyttsx3 e tenta selecionar voz em português.
-- `parse_and_execute` faz roteamento simples por palavras-chave para abrir Wikipedia, YouTube ou Google Maps.
-- `Assistant` orquestra STT, TTS e execução das ações.
-
-## Tratamento de Erros
-
-- Falhas de microfone ou reconhecimento retornam mensagens adequadas e o sistema pode ser usado em modo texto.
-- Comandos não reconhecidos retornam mensagem indicando erro e não encerram o programa.
-
-## Licença
-
-Uso educacional.
-.### Notebook
-
-- Abrir `assistente.ipynb` no Jupyter.
-- O notebook foi gerado a partir de `assistente.py` via Jupytext e contém células Markdown explicando cada seção (STT, TTS, Ações, Orquestrador e CLI).
-- Sincronizar alterações:
-
-```bash
-.\.venv\Scripts\python -m jupytext --to ipynb assistente.py
-.\.venv\Scripts\python -m jupytext --to py assistente.ipynb
-```
+- `assistente.py`: Script original.
+- `assistente_ai.py`: Script novo com integração Whisper/ChatGPT.
+- `requirements.txt`: Lista de dependências.
+- `README.md`: Este arquivo.
