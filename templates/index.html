@@ -30,6 +30,8 @@
     </form>
     <audio id="audio-player" controls style="margin-top:12px; display:none;"></audio>
     <div id="msg" class="msg" style="display:none;"></div>
+    <div id="status" class="msg" style="display:none;"></div>
+    <div id="spoken" class="msg ok" style="display:none;">Você disse: <span id="spoken-text"></span></div>
     {% if message is not none %}
       <div class="msg {{ 'ok' if success else 'err' }}">{{ message }}</div>
     {% endif %}
@@ -46,6 +48,9 @@
     const form = document.getElementById('cmd-form');
     const input = document.getElementById('cmd-input');
     const msgBox = document.getElementById('msg');
+    const statusBox = document.getElementById('status');
+    const spokenBox = document.getElementById('spoken');
+    const spokenText = document.getElementById('spoken-text');
     const speakToggle = document.getElementById('speak-toggle');
     const audioPlayer = document.getElementById('audio-player');
     form.addEventListener('submit', async (e) => {
@@ -78,19 +83,49 @@
     const micBtn = document.getElementById('mic-btn');
     micBtn.addEventListener('click', () => {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { alert('Reconhecimento de fala não suportado neste navegador'); return; }
+      if (!SR) {
+        statusBox.textContent = 'Reconhecimento de fala não suportado neste navegador. Use Chrome (Windows).';
+        statusBox.className = 'msg err';
+        statusBox.style.display = 'block';
+        return;
+      }
       const rec = new SR();
       rec.lang = 'pt-BR';
-      rec.interimResults = false;
+      rec.interimResults = true;
       rec.maxAlternatives = 1;
-      rec.onresult = (e) => {
-        const t = e.results[0][0].transcript || '';
-        input.value = t;
-        form.dispatchEvent(new Event('submit'));
+      rec.onstart = () => {
+        statusBox.textContent = 'Ouvindo...';
+        statusBox.className = 'msg ok';
+        statusBox.style.display = 'block';
+        spokenText.textContent = '';
+        spokenBox.style.display = 'none';
       };
-      rec.onerror = () => {};
+      rec.onresult = (e) => {
+        const t = Array.from(e.results).map(r => r[0].transcript).join(' ').trim();
+        spokenText.textContent = t;
+        spokenBox.style.display = t ? 'block' : 'none';
+        const last = e.results[e.results.length - 1];
+        if (last && last.isFinal) {
+          input.value = t;
+          form.dispatchEvent(new Event('submit'));
+        }
+      };
+      rec.onerror = (ev) => {
+        statusBox.textContent = 'Erro no microfone: ' + (ev.error || 'desconhecido');
+        statusBox.className = 'msg err';
+        statusBox.style.display = 'block';
+        // Sem fallback servidor-side neste ambiente; ver instruções abaixo
+      };
+      rec.onend = () => {
+        if (statusBox.textContent === 'Ouvindo...') {
+          statusBox.textContent = 'Não foi possível captar fala';
+          statusBox.className = 'msg err';
+          statusBox.style.display = 'block';
+        }
+      };
       rec.start();
     });
+
   </script>
 </body>
 </html>

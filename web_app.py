@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from assistente import parse_and_execute, load_config
 import os
 import uuid
+import tempfile
 
 app = Flask(__name__)
 
@@ -43,6 +44,7 @@ def api_tts():
     except Exception:
         return jsonify({"success": False, "message": "Falha ao gerar áudio"}), 500
     return send_file(wav_path, mimetype="audio/wav")
+
 
 def create_app() -> Flask:
     load_dotenv()
