@@ -76,5 +76,7 @@ python assistente.py
 
 - `assistente.py`: Script original.
 - `assistente_ai.py`: Script novo com integração Whisper/ChatGPT.
+- `assistente.ipynb`: Versão em notebook do assistente original.
+- `Assistente_de_Voz_Multi_Idiomas_Com_Whisper_e_ChatGPT.ipynb`: Notebook de referência tecnológica.
 - `requirements.txt`: Lista de dependências.
 - `README.md`: Este arquivo.

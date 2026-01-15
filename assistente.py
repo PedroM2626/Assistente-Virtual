@@ -31,19 +31,26 @@ class TextToSpeech(Protocol):
 
 class SpeechRecognitionSTT:
     def __init__(self, language: str = "pt-BR"):
-        import speech_recognition as sr
-        self._sr = sr
-        self._rec = sr.Recognizer()
-        self._language = language
+        try:
+            import speech_recognition as sr
+            self._sr = sr
+            self._rec = sr.Recognizer()
+            self._language = language
+        except ImportError:
+            print("Erro: speech_recognition não instalado. Use 'pip install SpeechRecognition'")
+            raise
 
     def listen(self, timeout: Optional[float] = None) -> Optional[str]:
+        print("\n[Ouvindo...] Fale agora.")
         try:
             with self._sr.Microphone() as source:
                 self._rec.adjust_for_ambient_noise(source)
                 audio = self._rec.listen(source, timeout=timeout)
+            print("[Processando...]")
             text = self._rec.recognize_google(audio, language=self._language)
             return text
-        except Exception:
+        except Exception as e:
+            print(f"Erro no reconhecimento: {e}")
             return None
 
 
@@ -57,21 +64,26 @@ class TextInputSTT:
                 return None
             return self._inputs.pop(0)
         try:
-            return input("Digite um comando (ou 'sair'): ").strip()
+            return input("\nDigite um comando (ou 'sair'): ").strip()
         except EOFError:
             return None
 
 
 class Pyttsx3TTS:
     def __init__(self, language: str = "pt-BR", rate: Optional[int] = None):
-        import pyttsx3
-        self._engine = pyttsx3.init()
-        self._language = language
-        if rate is not None:
-            self._engine.setProperty("rate", rate)
-        self._select_voice()
+        try:
+            import pyttsx3
+            self._engine = pyttsx3.init()
+            self._language = language
+            if rate is not None:
+                self._engine.setProperty("rate", rate)
+            self._select_voice()
+        except ImportError:
+            print("Erro: pyttsx3 não instalado. Use 'pip install pyttsx3'")
+            self._engine = None
 
     def _select_voice(self) -> None:
+        if not self._engine: return
         voices = self._engine.getProperty("voices")
         chosen = None
         for v in voices:
@@ -84,13 +96,18 @@ class Pyttsx3TTS:
             self._engine.setProperty("voice", chosen)
 
     def speak(self, text: str) -> None:
-        self._engine.say(text)
-        self._engine.runAndWait()
+        print(f"🤖 Assistente: {text}")
+        if self._engine:
+            try:
+                self._engine.say(text)
+                self._engine.runAndWait()
+            except Exception as e:
+                print(f"(Erro no áudio: {e})")
 
 
 class SilentTTS:
     def speak(self, text: str) -> None:
-        pass
+        print(f"🤖 Assistente (silencioso): {text}")
 
 
 # %% [markdown]
@@ -170,34 +187,48 @@ class Assistant:
 
     def run_once(self, text_override: Optional[str] = None) -> ActionResult:
         text = text_override if text_override is not None else self._stt.listen()
+        print(f"🎤 Você: {text}")
         result = parse_and_execute(text or "")
         self._tts.speak(result.message)
         return result
 
     def run(self) -> None:
-        self._tts.speak("Diga um comando")
+        self._tts.speak("Olá! Diga um comando.")
         while True:
             text = self._stt.listen()
             if text is None:
                 self._tts.speak("Não entendi")
                 continue
-            if text.lower().strip() in {"sair", "encerrar", "exit"}:
-                self._tts.speak("Encerrando")
+            
+            print(f"🎤 Você: {text}")
+            
+            if text.lower().strip() in {"sair", "encerrar", "exit", "tchau"}:
+                self._tts.speak("Até logo!")
                 break
+            
             result = parse_and_execute(text)
             self._tts.speak(result.message)
 
 
 def build_assistant(mode: str, once_text: str | None) -> Assistant:
     cfg = load_config()
-    tts = Pyttsx3TTS(language=cfg.lang)
+    
+    # Selecionar TTS
+    try:
+        tts = Pyttsx3TTS(language=cfg.lang)
+    except Exception:
+        tts = SilentTTS()
+
+    # Selecionar STT
     if mode == "voice":
         try:
             stt = SpeechRecognitionSTT(language=cfg.lang)
         except Exception:
+            print("Falha ao iniciar microfone. Alternando para modo texto.")
             stt = TextInputSTT([once_text] if once_text else None)
     else:
         stt = TextInputSTT([once_text] if once_text else None)
+        
     return Assistant(stt=stt, tts=tts, config=cfg)
 
 

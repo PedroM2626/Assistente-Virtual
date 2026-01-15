@@ -49,19 +49,23 @@ class WhisperSTT:
         print(f"\n[WhisperSTT] Inicializando...")
         print(f"[WhisperSTT] Carregando bibliotecas de áudio e IA (isso pode demorar na primeira vez)...")
         
-        # Lazy imports para não travar o início do script
-        global whisper, sd, wav, np
-        import whisper
-        import sounddevice as sd
-        import scipy.io.wavfile as wav
-        import numpy as np
+        try:
+            import whisper
+            import sounddevice as sd
+            import scipy.io.wavfile as wav
+            import numpy as np
+            self._whisper = whisper
+            self._sd = sd
+            self._wav = wav
+            self._np = np
+        except ImportError as e:
+            print(f"[WhisperSTT] ERRO: Faltam dependências: {e}")
+            print("Instale com: pip install openai-whisper sounddevice scipy numpy")
+            raise e
 
         print(f"[WhisperSTT] Carregando modelo Whisper '{model_size}'...")
-        if not os.path.exists(os.path.expanduser(f"~/.cache/whisper/{model_size}.pt")):
-             print(f"[WhisperSTT] AVISO: Baixando modelo '{model_size}'. Isso pode levar alguns minutos dependendo da sua internet.")
-        
         try:
-            self._model = whisper.load_model(model_size)
+            self._model = self._whisper.load_model(model_size)
             print("[WhisperSTT] Modelo carregado com sucesso.")
         except Exception as e:
             print(f"[WhisperSTT] ERRO CRÍTICO ao carregar modelo: {e}")
@@ -77,14 +81,14 @@ class WhisperSTT:
         
         print(f"\n[Ouvindo] Fale agora ({duration}s)...")
         try:
-            recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
-            sd.wait()
+            recording = self._sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+            self._sd.wait()
             print("[Processando] Transcrevendo áudio...")
 
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 temp_filename = f.name
             
-            wav.write(temp_filename, fs, recording)
+            self._wav.write(temp_filename, fs, recording)
 
             # Transcrever
             result = self._model.transcribe(temp_filename, language=self._language, fp16=False)
@@ -120,35 +124,41 @@ class TextInputSTT:
 class GTTSTTS:
     def __init__(self, language: str = "pt"):
         self._language = language
-        # Lazy import
-        global gTTS, pygame
+        self._gTTS = None
+        self._pygame = None
         try:
             from gtts import gTTS
             import pygame
-            pygame.mixer.init()
+            self._gTTS = gTTS
+            self._pygame = pygame
+            self._pygame.mixer.init()
         except Exception as e:
-            print(f"Aviso: Erro ao inicializar áudio: {e}")
+            print(f"Aviso: Erro ao inicializar áudio (gTTS/Pygame): {e}")
 
     def speak(self, text: str) -> None:
         if not text:
             return
         
+        print(f"\n🤖 Assistente: {text}")
+
+        if not self._gTTS or not self._pygame:
+            return
+
         try:
-            tts = gTTS(text=text, lang=self._language, slow=False)
+            tts = self._gTTS(text=text, lang=self._language, slow=False)
             
             with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
                 temp_filename = f.name
             
             tts.save(temp_filename)
 
-            print(f"\n🤖 Assistente: {text}")
-            pygame.mixer.music.load(temp_filename)
-            pygame.mixer.music.play()
+            self._pygame.mixer.music.load(temp_filename)
+            self._pygame.mixer.music.play()
             
-            while pygame.mixer.music.get_busy():
+            while self._pygame.mixer.music.get_busy():
                 time.sleep(0.1)
             
-            pygame.mixer.music.unload()
+            self._pygame.mixer.music.unload()
             
             try:
                 os.remove(temp_filename)
@@ -156,16 +166,18 @@ class GTTSTTS:
                 pass
                 
         except Exception as e:
-            print(f"Erro no TTS: {e}")
-            print(f"🤖 Assistente (texto): {text}")
+            print(f"Erro ao reproduzir áudio: {e}")
 
 
 class ChatGPTIntelligence:
     def __init__(self, api_key: str, model: str = "gpt-3.5-turbo"):
-        global openai
-        import openai
-        self._client = openai.OpenAI(api_key=api_key)
-        self._model = model
+        try:
+            import openai
+            self._client = openai.OpenAI(api_key=api_key)
+            self._model = model
+        except ImportError:
+            print("Erro: Biblioteca 'openai' não encontrada. Instale com 'pip install openai'.")
+            raise
 
     def process(self, text: str) -> str:
         if not text:
@@ -276,7 +288,6 @@ def check_ffmpeg():
         print("O Whisper precisa do FFmpeg para funcionar.")
         print("Instale e adicione ao PATH: https://ffmpeg.org/download.html")
         print("Windows: 'choco install ffmpeg' ou baixe o executável.\n")
-        # Não abortar hard, mas avisar
 
 def main():
     print(">>> Iniciando Assistente Virtual...")
@@ -289,8 +300,13 @@ def main():
     tts = GTTSTTS(language="pt")
 
     # Configurar STT
+    stt = None
     if args.mode == "voice":
-        stt = WhisperSTT(model_size=args.model, language="pt", duration=args.duration)
+        try:
+            stt = WhisperSTT(model_size=args.model, language="pt", duration=args.duration)
+        except Exception:
+            print("Falha ao carregar Whisper. Alternando para modo texto.")
+            stt = TextInputSTT()
     else:
         stt = TextInputSTT()
 
@@ -299,12 +315,13 @@ def main():
     if not args.no_ai:
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key and api_key != "sua_chave_api_aqui":
-            print(f"[IA] Chave OpenAI detectada.")
-            ai = ChatGPTIntelligence(api_key=api_key)
+            try:
+                ai = ChatGPTIntelligence(api_key=api_key)
+            except Exception as e:
+                print(f"Erro ao inicializar ChatGPT: {e}")
         else:
             print("\n[AVISO] Chave OpenAI não configurada (OPENAI_API_KEY).")
             print("Apenas comandos locais (Wikipedia, YouTube) funcionarão.")
-            print("Para ativar a IA, configure o arquivo .env.\n")
     
     # Iniciar
     assistant = AIAssistant(stt, tts, ai)
