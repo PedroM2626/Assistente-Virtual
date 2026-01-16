@@ -20,8 +20,8 @@ def get_whisper_model():
     global whisper_model
     if whisper_model is None:
         import whisper
-        print("Carregando modelo Whisper...")
-        whisper_model = whisper.load_model("tiny")
+        print("Carregando modelo Whisper (Local e Gratuito)...")
+        whisper_model = whisper.load_model("base")
     return whisper_model
 
 def get_chatgpt_response(text, api_key):

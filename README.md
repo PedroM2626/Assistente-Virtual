@@ -9,19 +9,20 @@ Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, pr
 O projeto possui duas versões:
 
 1.  **`assistente.py`**: Versão clássica leve.
-    *   STT: Google Speech Recognition (Online)
+    *   STT: Google Speech Recognition (Online) ou Whisper Local (dependendo da configuração).
     *   TTS: pyttsx3 (Offline)
     *   Comandos: Wikipedia, YouTube, Farmácia.
 
 2.  **`assistente_ai.py`**: Versão avançada com IA para terminal.
-    *   STT: OpenAI Whisper (Local, alta precisão)
-    *   IA: OpenAI ChatGPT (Inteligência Geral)
+    *   STT: OpenAI Whisper (**Local e Gratuito** - Modelo `base`)
+    *   IA: OpenAI ChatGPT (Opcional, Inteligência Geral)
     *   TTS: Google Text-to-Speech (gTTS, voz natural)
     *   Comandos: Wikipedia, YouTube, Farmácia + Conversação livre via ChatGPT.
 
-3.  **`interface_gradio.py`** (NOVO): Interface visual moderna no navegador.
+3.  **`app.py`**: Interface visual moderna no navegador (Gradio).
     *   Mesmas funcionalidades da versão IA, mas com interface gráfica.
     *   Suporte a entrada por áudio e texto simultaneamente.
+    *   Usa Whisper **localmente** para transcrição gratuita.
     *   Histórico de conversa visual.
 
 ## Pré-requisitos
@@ -58,7 +59,7 @@ O projeto possui duas versões:
 
 Para abrir a interface no seu navegador:
 ```bash
-python interface_gradio.py
+python app.py
 ```
 
 ### Versão IA (Terminal)
@@ -88,8 +89,8 @@ python assistente.py
 
 - `assistente.py`: Script original.
 - `assistente_ai.py`: Script novo com integração Whisper/ChatGPT.
-- `interface_gradio.py`: Interface gráfica para o assistente de IA.
-- `assistente.ipynb`: Versão em notebook do assistente original.
+- `app.py`: Interface gráfica para o assistente de IA (Gradio).
+- `assistente.ipynb`: Versão em notebook com Whisper local.
 - `Assistente_de_Voz_Multi_Idiomas_Com_Whisper_e_ChatGPT.ipynb`: Notebook de referência tecnológica.
 - `requirements.txt`: Lista de dependências.
 - `README.md`: Este arquivo.

@@ -45,8 +45,8 @@ class Intelligence(Protocol):
 # Implementações
 
 class WhisperSTT:
-    def __init__(self, model_size: str = "tiny", language: str = "pt", duration: int = 5):
-        print(f"\n[WhisperSTT] Inicializando...")
+    def __init__(self, model_size: str = "base", language: str = "pt", duration: int = 5):
+        print(f"\n[WhisperSTT] Inicializando (Local e Gratuito)...")
         print(f"[WhisperSTT] Carregando bibliotecas de áudio e IA (isso pode demorar na primeira vez)...")
         
         try:
@@ -278,7 +278,7 @@ def parse_args():
     p.add_argument("--mode", choices=["voice", "text"], default="voice", help="Modo de entrada")
     p.add_argument("--no-ai", action="store_true", help="Desativar ChatGPT")
     p.add_argument("--duration", type=int, default=5, help="Duração da gravação (segundos)")
-    p.add_argument("--model", type=str, default="tiny", help="Modelo Whisper (tiny, base, small, medium, large)")
+    p.add_argument("--model", type=str, default="base", help="Modelo Whisper (tiny, base, small, medium, large)")
     return p.parse_args()
 
 def check_ffmpeg():
