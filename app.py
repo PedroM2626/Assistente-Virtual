@@ -7,6 +7,10 @@ import webbrowser
 import gradio as gr
 from dotenv import load_dotenv
 
+# global variables
+SERVER_NAME = "0.0.0.0"
+SERVER_PORT = 7860
+
 # Patch para compatibilidade com Python 3.13+
 if sys.version_info >= (3, 13):
     import types
@@ -23,21 +27,6 @@ def get_whisper_model():
         print("Carregando modelo Whisper (Local e Gratuito)...")
         whisper_model = whisper.load_model("base")
     return whisper_model
-
-def get_chatgpt_response(text, api_key):    
-    try:
-        import openai
-        client = openai.OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Você é um assistente virtual útil e conciso. Responda em português."},
-                {"role": "user", "content": text}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Erro na IA: {str(e)}"
 
 def try_local_commands(text):
     s = (text or "").lower()
@@ -74,7 +63,7 @@ def text_to_speech(text):
         print(f"Erro TTS: {e}")
         return None
 
-def process_interaction(audio_path, text_input, history, api_key):
+def process_interaction(audio_path, text_input, history):
     # Inicializar histórico se for None
     if history is None:
         history = []
@@ -99,13 +88,9 @@ def process_interaction(audio_path, text_input, history, api_key):
         # Processar comando local primeiro
         response_text = try_local_commands(input_text)
         
-        # Se não for comando local, tentar IA
+        # Se não for comando local, apenas confirma o que ouviu (modo local puro)
         if response_text is None:
-            response_text = get_chatgpt_response(input_text, api_key)
-            
-            # Se a IA não estiver disponível (sem chave), apenas confirma o que ouviu
-            if response_text is None:
-                response_text = f"Você disse: {input_text}"
+            response_text = f"Você disse: {input_text}. (Comando não reconhecido localmente)"
         
         print(f"Resposta: {response_text}")
 
@@ -127,7 +112,6 @@ def process_interaction(audio_path, text_input, history, api_key):
 
 def main():
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY", "")
     
     with gr.Blocks(title="Assistente Virtual Local") as demo:
         gr.Markdown("# 🤖 Assistente Virtual 100% Local")
@@ -140,7 +124,7 @@ def main():
         
         with gr.Row():
             with gr.Column(scale=2):
-                chatbot = gr.Chatbot(label="Conversa")
+                chatbot = gr.Chatbot(label="Conversa", type="messages")
                 audio_output = gr.Audio(label="Resposta em Áudio", autoplay=True)
             
             with gr.Column(scale=1):
@@ -149,25 +133,23 @@ def main():
                 btn_send = gr.Button("Enviar", variant="primary")
                 btn_clear = gr.Button("Limpar Conversa")
 
-        # Estado para a chave API (pega do .env inicialmente)
-        api_key_state = gr.State(value=api_key)
-
         # Eventos
         btn_send.click(
             process_interaction, 
-            inputs=[audio_input, text_input, chatbot, api_key_state], 
+            inputs=[audio_input, text_input, chatbot], 
             outputs=[chatbot, text_input, audio_output]
         )
         
         text_input.submit(
             process_interaction, 
-            inputs=[audio_input, text_input, chatbot, api_key_state], 
+            inputs=[audio_input, text_input, chatbot], 
             outputs=[chatbot, text_input, audio_output]
         )
 
         btn_clear.click(lambda: ([], "", gr.update(value=None)), None, [chatbot, text_input, audio_output])
 
-    demo.launch(share=True)
+    demo.launch(server_name=SERVER_NAME, server_port=SERVER_PORT, share=True)
+
 
 if __name__ == "__main__":
     main()

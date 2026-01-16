@@ -2,7 +2,6 @@ pyttsx3==2.90
 python-dotenv==1.0.1
 pytest==8.3.3
 jupytext==1.16.2
-openai>=1.0.0
 openai-whisper
 gTTS
 pygame
