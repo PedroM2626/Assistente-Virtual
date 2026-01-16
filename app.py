@@ -24,10 +24,7 @@ def get_whisper_model():
         whisper_model = whisper.load_model("base")
     return whisper_model
 
-def get_chatgpt_response(text, api_key):
-    if not api_key or api_key == "sua_chave_api_aqui":
-        return "Erro: Chave API da OpenAI não configurada no arquivo .env."
-    
+def get_chatgpt_response(text, api_key):    
     try:
         import openai
         client = openai.OpenAI(api_key=api_key)
@@ -102,10 +99,13 @@ def process_interaction(audio_path, text_input, history, api_key):
         # Processar comando local primeiro
         response_text = try_local_commands(input_text)
         
-        # Se não for comando local, usar IA
+        # Se não for comando local, tentar IA
         if response_text is None:
-            print("Usando IA para responder...")
             response_text = get_chatgpt_response(input_text, api_key)
+            
+            # Se a IA não estiver disponível (sem chave), apenas confirma o que ouviu
+            if response_text is None:
+                response_text = f"Você disse: {input_text}"
         
         print(f"Resposta: {response_text}")
 
@@ -129,9 +129,14 @@ def main():
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY", "")
     
-    with gr.Blocks(title="Assistente Virtual IA") as demo:
-        gr.Markdown("# 🤖 Assistente Virtual com IA")
-        gr.Markdown("Fale com o assistente ou digite um comando. Ele pode pesquisar no Wikipedia, YouTube ou conversar via ChatGPT.")
+    with gr.Blocks(title="Assistente Virtual Local") as demo:
+        gr.Markdown("# 🤖 Assistente Virtual 100% Local")
+        gr.Markdown("Este assistente usa **OpenAI Whisper** rodando localmente no seu computador para ouvir e processar comandos sem depender de APIs externas.")
+        
+        gr.Markdown("### 🎤 Comandos Disponíveis:")
+        gr.Markdown("- 'Pesquisar Wikipedia sobre [assunto]'")
+        gr.Markdown("- 'Abrir YouTube' ou 'Vídeo de [assunto]'")
+        gr.Markdown("- 'Farmácia próxima'")
         
         with gr.Row():
             with gr.Column(scale=2):
@@ -162,7 +167,7 @@ def main():
 
         btn_clear.click(lambda: ([], "", gr.update(value=None)), None, [chatbot, text_input, audio_output])
 
-    demo.launch()
+    demo.launch(share=True)
 
 if __name__ == "__main__":
     main()
