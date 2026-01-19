@@ -1,7 +1,5 @@
 # Assistente Virtual com IA
 
-> ⚠️ **Projeto em Desenvolvimento**: Este software está em fase ativa de construção e melhorias. Funcionalidades podem mudar e bugs podem ocorrer.
-
 Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, processá-los e responder usando fala. O foco atual é a operação **100% local**, garantindo privacidade e custo zero.
 
 ## 🚀 Demonstração Online
