@@ -1,6 +1,5 @@
 # Assistente Virtual com IA
 
-
 Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, processá-los e responder usando fala. Agora integrado com a inteligência artificial **GLM-4.7-Flash** via Hugging Face.
 
 ## 🚀 Demonstração Online
@@ -9,21 +8,26 @@ O projeto está hospedado e pode ser testado no Hugging Face Spaces:
 
 ## Funcionalidades
 
-O projeto possui três versões principais:
+O projeto possui quatro formas de uso principais:
 
-1.  **`app.py`**: Interface visual moderna no navegador (Gradio) - **Recomendado**.
+1.  **`assistente.ipynb`**: Notebook interativo (Jupyter/Colab).
+    *   **Ideal para testes rápidos e desenvolvimento.**
+    *   Inclui célula de instalação automática de dependências.
+    *   Usa **GLM-4.7-Flash** via Hugging Face API.
+
+2.  **`app.py`**: Interface visual moderna no navegador (Gradio) - **Recomendado**.
     *   **Voz Local**: STT com OpenAI Whisper (**Local e Gratuito** - Modelo `base`).
     *   **Inteligência Híbrida**: Usa **GLM-4.7-Flash** para respostas inteligentes via Hugging Face API.
     *   TTS: Google Text-to-Speech (gTTS).
     *   Interface gráfica intuitiva com histórico de conversa.
     *   Comandos locais: Wikipedia, YouTube, Google Maps.
 
-2.  **`assistente_ai.py`**: Versão avançada para terminal (Legado).
+3.  **`assistente_ai.py`**: Versão avançada para terminal (Legado).
     *   STT: OpenAI Whisper (**Local e Gratuito**).
     *   IA: OpenAI ChatGPT (Opcional).
     *   TTS: Google Text-to-Speech (gTTS).
 
-3.  **`assistente.py`**: Versão clássica leve.
+4.  **`assistente.py`**: Versão clássica leve.
     *   STT: Google Speech Recognition (Online) ou Whisper Local.
     *   TTS: pyttsx3 (Offline).
     *   Comandos básicos: Wikipedia, YouTube, Farmácia.
@@ -57,8 +61,10 @@ O projeto possui três versões principais:
 
 ## Como Usar
 
+### Notebook Jupyter
+Abra o arquivo `assistente.ipynb` no seu editor favorito (VS Code, Jupyter Lab) ou Google Colab.
+
 ### Interface Visual (Gradio)
-Esta é a versão principal com IA integrada.
 ```bash
 python app.py
 ```
@@ -75,8 +81,11 @@ python assistente.py
 
 ## Estrutura do Projeto
 
+- `assistente.ipynb`: Notebook interativo.
 - `app.py`: Interface gráfica principal (Gradio) com integração GLM-4.7-Flash.
-- `assistente_ai.py`: Script de terminal.
+- `assistente_ai.py`: Script de terminal avançado.
 - `assistente.py`: Script original leve.
 - `requirements.txt`: Lista de dependências.
 - `README.md`: Este arquivo.
+- `.env`: Configurações de chaves de API.
+- `tests/`: Testes automatizados.
