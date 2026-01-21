@@ -1,8 +1,7 @@
 # Assistente Virtual com IA
 
-> ⚠️ **Projeto em Desenvolvimento**: Este software está em fase ativa de construção e melhorias. Funcionalidades podem mudar e bugs podem ocorrer.
 
-Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, processá-los e responder usando fala. O foco atual é a operação **100% local**, garantindo privacidade e custo zero.
+Este projeto implementa um assistente virtual capaz de ouvir comandos de voz, processá-los e responder usando fala. Agora integrado com a inteligência artificial **GLM-4.7-Flash** via Hugging Face.
 
 ## 🚀 Demonstração Online
 O projeto está hospedado e pode ser testado no Hugging Face Spaces:
@@ -13,17 +12,16 @@ O projeto está hospedado e pode ser testado no Hugging Face Spaces:
 O projeto possui três versões principais:
 
 1.  **`app.py`**: Interface visual moderna no navegador (Gradio) - **Recomendado**.
-    *   **100% Local**: Não requer chaves de API externas.
-    *   STT: OpenAI Whisper (**Local e Gratuito** - Modelo `base`).
+    *   **Voz Local**: STT com OpenAI Whisper (**Local e Gratuito** - Modelo `base`).
+    *   **Inteligência Híbrida**: Usa **GLM-4.7-Flash** para respostas inteligentes via Hugging Face API.
     *   TTS: Google Text-to-Speech (gTTS).
     *   Interface gráfica intuitiva com histórico de conversa.
     *   Comandos locais: Wikipedia, YouTube, Google Maps.
 
-2.  **`assistente_ai.py`**: Versão avançada para terminal.
+2.  **`assistente_ai.py`**: Versão avançada para terminal (Legado).
     *   STT: OpenAI Whisper (**Local e Gratuito**).
-    *   IA: OpenAI ChatGPT (Opcional, requer chave API).
+    *   IA: OpenAI ChatGPT (Opcional).
     *   TTS: Google Text-to-Speech (gTTS).
-    *   Comandos locais + Conversação livre via ChatGPT.
 
 3.  **`assistente.py`**: Versão clássica leve.
     *   STT: Google Speech Recognition (Online) ou Whisper Local.
@@ -53,20 +51,19 @@ O projeto possui três versões principais:
     ```bash
     pip install -r requirements.txt
     ```
-4.  Configure as variáveis de ambiente (Opcional):
+4.  Configure as variáveis de ambiente:
     *   Copie `.env.example` para `.env`
-    *   Adicione sua `OPENAI_API_KEY` apenas se for usar a versão `assistente_ai.py` com ChatGPT.
+    *   Adicione seu `HF_TOKEN` (Hugging Face Token) no arquivo `.env` para habilitar a inteligência artificial.
 
 ## Como Usar
 
 ### Interface Visual (Gradio)
-Esta é a versão principal e 100% local.
+Esta é a versão principal com IA integrada.
 ```bash
 python app.py
 ```
 
-### Versão Terminal (IA)
-Para usar voz (padrão):
+### Versão Terminal
 ```bash
 python assistente_ai.py
 ```
@@ -78,9 +75,8 @@ python assistente.py
 
 ## Estrutura do Projeto
 
-- `app.py`: Interface gráfica principal (Gradio).
-- `assistente_ai.py`: Script de terminal com integração Whisper/ChatGPT.
+- `app.py`: Interface gráfica principal (Gradio) com integração GLM-4.7-Flash.
+- `assistente_ai.py`: Script de terminal.
 - `assistente.py`: Script original leve.
-- `assistente.ipynb`: Notebook com demonstração e experimentação.
 - `requirements.txt`: Lista de dependências.
 - `README.md`: Este arquivo.

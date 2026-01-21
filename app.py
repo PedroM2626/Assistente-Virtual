@@ -28,6 +28,50 @@ def get_whisper_model():
         whisper_model = whisper.load_model("base")
     return whisper_model
 
+def get_glm_response(text):    
+    max_retries = 3
+    retry_delay = 2 # segundos
+    
+    for attempt in range(max_retries):
+        try:
+            from openai import OpenAI
+            
+            hf_token = os.getenv("HF_TOKEN")
+            if not hf_token or hf_token == "seu_token_hf_aqui":
+                return None
+                
+            client = OpenAI(
+                base_url="https://router.huggingface.co/v1",
+                api_key=hf_token,
+                timeout=30.0 # Timeout de 30 segundos
+            )
+            
+            response = client.chat.completions.create(
+                model="zai-org/GLM-4.7-Flash",
+                messages=[
+                    {"role": "system", "content": "Você é um assistente virtual útil e conciso. Responda em português."},
+                    {"role": "user", "content": text}
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            error_str = str(e)
+            print(f"Tentativa {attempt + 1} falhou: {error_str}")
+            
+            # Se for erro de timeout ou gateway (504/502/503), tenta novamente
+            if any(code in error_str for code in ["504", "502", "503", "timeout"]) and attempt < max_retries - 1:
+                time.sleep(retry_delay * (attempt + 1))
+                continue
+                
+            # Limpa o erro se for HTML bruto (Hugging Face costuma retornar HTML em erros de gateway)
+            if "<!DOCTYPE html>" in error_str or "<html>" in error_str:
+                if "504" in error_str:
+                    return "Erro: O servidor da IA demorou muito para responder (Timeout). Por favor, tente novamente em instantes."
+                return "Erro: O servidor da IA está temporariamente indisponível. Tente novamente mais tarde."
+                
+            return f"Erro na IA: {error_str}"
+    return "Erro: Não foi possível obter resposta da IA após várias tentativas."
+
 def try_local_commands(text):
     s = (text or "").lower()
     if "wikipedia" in s:
@@ -88,16 +132,20 @@ def process_interaction(audio_path, text_input, history):
         # Processar comando local primeiro
         response_text = try_local_commands(input_text)
         
-        # Se não for comando local, apenas confirma o que ouviu (modo local puro)
+        # Se não for comando local, tentar IA GLM
         if response_text is None:
-            response_text = f"Você disse: {input_text}. (Comando não reconhecido localmente)"
+            response_text = get_glm_response(input_text)
+            
+            # Se a IA não estiver configurada (sem token), apenas confirma o que ouviu
+            if response_text is None:
+                response_text = f"Você disse: {input_text}. (Comando não reconhecido e IA não configurada)"
         
         print(f"Resposta: {response_text}")
 
         # Gerar áudio
         audio_response = text_to_speech(response_text)
         
-        # Atualizar histórico (Gradio 4+ prefere lista de dicts ou lista de listas)
+        # Atualizar histórico
         history.append({"role": "user", "content": input_text})
         history.append({"role": "assistant", "content": response_text})
         
@@ -113,9 +161,9 @@ def process_interaction(audio_path, text_input, history):
 def main():
     load_dotenv()
     
-    with gr.Blocks(title="Assistente Virtual Local") as demo:
-        gr.Markdown("# 🤖 Assistente Virtual 100% Local")
-        gr.Markdown("Este assistente usa **OpenAI Whisper** rodando localmente no seu computador para ouvir e processar comandos sem depender de APIs externas.")
+    with gr.Blocks(title="Assistente Virtual") as demo:
+        gr.Markdown("# 🤖 Assistente Virtual com IA")
+        gr.Markdown("Este assistente usa **OpenAI Whisper** para voz e **GLM-4.7-Flash** para inteligência via Hugging Face.")
         
         gr.Markdown("### 🎤 Comandos Disponíveis:")
         gr.Markdown("- 'Pesquisar Wikipedia sobre [assunto]'")
@@ -124,7 +172,7 @@ def main():
         
         with gr.Row():
             with gr.Column(scale=2):
-                chatbot = gr.Chatbot(label="Conversa", type="messages")
+                chatbot = gr.Chatbot(label="Conversa")
                 audio_output = gr.Audio(label="Resposta em Áudio", autoplay=True)
             
             with gr.Column(scale=1):
@@ -149,7 +197,6 @@ def main():
         btn_clear.click(lambda: ([], "", gr.update(value=None)), None, [chatbot, text_input, audio_output])
 
     demo.launch(server_name=SERVER_NAME, server_port=SERVER_PORT, share=True)
-
 
 if __name__ == "__main__":
     main()
